@@ -207,9 +207,74 @@ async function fetchAll(urls) {
 }
 ```
 
+##### Бонус. Ограничение параллелизма
+Доработайте fetchAll, чтобы она принимала второй аргумент limit (по умолчанию 3).
+
+Одновременно может выполняться не больше limit запросов. В итоге верните результаты всех URL-ов, в том же порядке, что и входной массив. Ошибка одного запроса не отменяет остальные.
+
+```
+const axios = require('axios');
+async function fetchAll(urls, limit = 3) {
+    // Ваш код
+}
+const urls = Array.from({ length: 10 }, (_, i) => `https://api.example.com/items/${i}`);
+fetchAll(urls, 3).then(console.log);
+```
+
+Как оценивать:
+
+Засчитывается любой способ удержать лимит. Пачки по 3 (дождались текущую тройку — запустили следующую) — нормальное решение. Непрерывная очередь (освободилось место — сразу стартует следующий URL) — плюс, в условии этого нет.
+Ответ — массив длины urls.length, индекс совпадает с исходным URL.
+Упавший запрос даёт объект ошибки и не останавливает остальные.
+Promise.all сразу на все URL-ы не подходит: лимит не соблюдён.
+Оба референса ниже одинаково верные.
+
+Пачки:
+```
+const axios = require('axios');
+async function fetchAll(urls, limit = 3) {
+    const results = [];
+    for (let i = 0; i < urls.length; i += limit) {
+        const chunk = urls.slice(i, i + limit);
+        const settled = await Promise.allSettled(chunk.map(url => axios.get(url)));
+        for (const result of settled) {
+            if (result.status === 'fulfilled') {
+                results.push(result.value.data);
+            } else {
+                results.push({ error: true, message: result.reason.message });
+            }
+        }
+    }
+    return results;
+}
+```
+
+Непрерывная очередь (плюс, не требование):
+```
+const axios = require('axios');
+async function fetchAll(urls, limit = 3) {
+    const results = new Array(urls.length);
+    let cursor = 0;
+    async function worker() {
+        while (cursor < urls.length) {
+            const index = cursor++;
+            try {
+                const response = await axios.get(urls[index]);
+                results[index] = response.data;
+            } catch (error) {
+                results[index] = { error: true, message: error.message };
+            }
+        }
+    }
+    const workersCount = Math.min(Math.max(limit, 0), urls.length);
+    await Promise.all(Array.from({ length: workersCount }, () => worker()));
+    return results;
+}
+```
+
 #### 2. Node.js (Работа с массивами и объектами): 
 Напишите функцию, которая принимает массив объектов (товары с полями `name` и `price`) и возвращает новый массив, где каждому товару добавлено новое поле `discountedPrice` с ценой, уменьшенной на 10%.
-```node.js
+```
 function applyDiscount(products) {
     // Ваш код
 }
