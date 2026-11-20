@@ -212,7 +212,7 @@ async function fetchAll(urls) {
 
 Одновременно может выполняться не больше limit запросов. В итоге верните результаты всех URL-ов, в том же порядке, что и входной массив. Ошибка одного запроса не отменяет остальные.
 
-```
+```js
 const axios = require('axios');
 async function fetchAll(urls, limit = 3) {
     // Ваш код
@@ -230,7 +230,7 @@ Promise.all сразу на все URL-ы не подходит: лимит не
 Оба референса ниже одинаково верные.
 
 Пачки:
-```
+```js
 const axios = require('axios');
 async function fetchAll(urls, limit = 3) {
     const results = [];
@@ -250,7 +250,7 @@ async function fetchAll(urls, limit = 3) {
 ```
 
 Непрерывная очередь (плюс, не требование):
-```
+```js
 const axios = require('axios');
 async function fetchAll(urls, limit = 3) {
     const results = new Array(urls.length);
